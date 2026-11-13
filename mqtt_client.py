@@ -4,6 +4,15 @@ BROKER_HOST = "localhost"
 BROKER_PORT = 1883
 
 
+def parse_broker_url(url):
+    """'mqtt://192.168.1.100:1883' -> ('192.168.1.100', 1883). Port defaults to 1883."""
+    address = url.strip().removeprefix("mqtt://")
+    if ":" in address:
+        host, port = address.split(":")
+        return host, int(port)
+    return address, BROKER_PORT
+
+
 # Callback: we never call this ourselves. paho calls it for us
 # as soon as the broker accepts the connection.
 def on_connect(client, userdata, flags, reason_code, properties):
