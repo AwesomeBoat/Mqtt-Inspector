@@ -1,6 +1,9 @@
-import paho.mqtt.client as mqtt
+import re
 
-from app import build_window
+import paho.mqtt.client as mqtt
+from PySide6.QtWidgets import QTableWidget
+
+from app import add_message_row, build_window
 from conftest import wait_until
 
 
@@ -57,3 +60,51 @@ def test_message_shows_in_window(qt_app, broker):
     assert wait_until(
         lambda: window.last_message_label.text() == "Dernier message : test/step2b hello"
     )
+
+
+# Checks that a row gets the 3 cells in the right columns.
+def test_add_message_row_fills_three_columns(qt_app):
+    table = QTableWidget(0, 3)
+    add_message_row(table, "15:42:31", "home/living/temperature", "22.6")
+    assert table.rowCount() == 1
+    assert table.item(0, 0).text() == "15:42:31"
+    assert table.item(0, 1).text() == "home/living/temperature"
+    assert table.item(0, 2).text() == "22.6"
+
+
+# Checks that the newest message goes on top, like in the mockup.
+def test_add_message_row_puts_newest_on_top(qt_app):
+    table = QTableWidget(0, 3)
+    add_message_row(table, "15:42:28", "first", "1")
+    add_message_row(table, "15:42:31", "second", "2")
+    assert table.item(0, 1).text() == "second"
+    assert table.item(1, 1).text() == "first"
+
+
+# Checks the window starts with an empty table with the mockup's headers.
+def test_window_has_empty_messages_table(qt_app):
+    window = build_window()
+    table = window.messages_table
+    assert table.rowCount() == 0
+    headers = [table.horizontalHeaderItem(i).text() for i in range(3)]
+    assert headers == ["Heure", "Topic", "Message"]
+
+
+# YOUR TARGET: checks that a received message lands in the table, with a HH:MM:SS time.
+def test_received_message_goes_in_table(qt_app, broker):
+    window = build_window()
+    window.connect_button.click()
+    wait_until(lambda: window.status_label.text().startswith("Connecté"))
+    wait_until(lambda: False, timeout=0.3)  # give the broker time to register our subscribe
+
+    publisher = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    publisher.connect("localhost", 1883)
+    publisher.loop_start()
+    publisher.publish("test/step3", "22.6").wait_for_publish(timeout=2)
+    publisher.disconnect()
+    publisher.loop_stop()
+
+    table = window.messages_table
+    assert wait_until(lambda: table.rowCount() > 0 and table.item(0, 1).text() == "test/step3")
+    assert table.item(0, 2).text() == "22.6"
+    assert re.fullmatch(r"\d{2}:\d{2}:\d{2}", table.item(0, 0).text())

@@ -1,5 +1,5 @@
 import sys
-
+from datetime import datetime
 import paho.mqtt.client as mqtt
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import (
@@ -8,11 +8,22 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
 
 from mqtt_client import parse_broker_url
+
+
+def add_message_row(table, time_text, topic, payload):
+    """Adds one message at the top of the table (newest first, like the mockup)."""
+    table.insertRow(0)  # new empty row at index 0 = top
+    # Each cell holds a QTableWidgetItem: (row, column, item)
+    table.setItem(0, 0, QTableWidgetItem(time_text))
+    table.setItem(0, 1, QTableWidgetItem(topic))
+    table.setItem(0, 2, QTableWidgetItem(payload))
 
 
 def build_window():
@@ -26,6 +37,13 @@ def build_window():
     window.status_label = QLabel("Déconnecté")
     window.last_message_label = QLabel("Dernier message : -")
 
+    # Table = a spreadsheet in the window: 0 rows to start, 3 columns
+    window.messages_table = QTableWidget(0, 3)
+    window.messages_table.setHorizontalHeaderLabels(["Heure", "Topic", "Message"])
+    window.messages_table.horizontalHeader().setStretchLastSection(True)  # Message fills the width
+    window.messages_table.verticalHeader().setVisible(False)  # hide row numbers
+    window.messages_table.setColumnWidth(1, 250)
+
     # paho callback: runs inside poll_network(), so it can touch the window
     def on_mqtt_connect(client, userdata, flags, reason_code, properties):
         if reason_code.is_failure:  # broker answered "no" (e.g. bad password)
@@ -34,9 +52,12 @@ def build_window():
         window.status_label.setText(f"Connecté à {window.url_input.text()}")
         client.subscribe("#")
 
-    # paho callback: called on each incoming message, updates the label
+    # paho callback: called on each incoming message, updates the label & add data in a new row
     def on_mqtt_message(client, userdata, message):
         window.last_message_label.setText(f"Dernier message : {message.topic} {message.payload.decode('utf-8')}")
+        add_message_row(window.messages_table, datetime.now().strftime(format="%H:%M:%S"), message.topic, message.payload.decode('utf-8'))
+    
+    
     # Timer: every 50 ms, let paho read the network once (timeout=0 = don't wait).
     # paho then fires our callbacks right here, in the window's thread.
     def poll_network():
@@ -82,8 +103,9 @@ def build_window():
     page.addLayout(top_row)
     page.addWidget(window.status_label)
     page.addWidget(window.last_message_label)
+    page.addWidget(window.messages_table)
 
-    window.resize(600, 140)
+    window.resize(800, 500)
     return window
 
 

@@ -28,7 +28,8 @@ Bonus s'il reste du temps : pause, vider, recherche, JSON, Historique, Paramètr
 - 2026-11-13 : plan validé. Étape 1 finie (3 tests verts, mon `on_message` relu).
 - 2026-11-13 : étape 2a finie (fenêtre + champ URL + bouton, Entrée connecte aussi, 6 tests verts).
 - 2026-11-13 : étape 2b finie (vraie connexion via QTimer + `client.loop(timeout=0)`, « Dernier message », 12 tests verts).
-- Prochaine étape : 3, tableau des messages en direct.
+- 2026-11-13 : étape 3 finie (tableau Heure/Topic/Message, plus récent en haut, 16 tests verts).
+- Prochaine étape : 4, panneau Topics avec compteurs et cases à cocher.
 
 ## Réglages
 Aucun changement par rapport à `CodeMastery/CLAUDE.md`.
