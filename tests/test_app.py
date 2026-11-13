@@ -1,9 +1,10 @@
 import re
 
 import paho.mqtt.client as mqtt
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QTableWidget
 
-from app import add_message_row, build_window
+from app import add_message_row, apply_topic_filter, build_window, update_topic_count
 from conftest import wait_until
 
 
@@ -108,3 +109,46 @@ def test_received_message_goes_in_table(qt_app, broker):
     assert wait_until(lambda: table.rowCount() > 0 and table.item(0, 1).text() == "test/step3")
     assert table.item(0, 2).text() == "22.6"
     assert re.fullmatch(r"\d{2}:\d{2}:\d{2}", table.item(0, 0).text())
+
+
+# Checks that each new topic gets one unchecked line showing its count.
+def test_update_topic_count_creates_unchecked_line(qt_app):
+    window = build_window()
+    update_topic_count(window, "home/living/temperature")
+    item = window.topic_items["home/living/temperature"]
+    assert window.topics_list.count() == 1
+    assert item.text() == "home/living/temperature  (1)"
+    assert item.checkState() == Qt.CheckState.Unchecked
+
+
+# Checks that the same topic twice updates its count instead of adding a line.
+def test_update_topic_count_increments(qt_app):
+    window = build_window()
+    update_topic_count(window, "esp32/status")
+    update_topic_count(window, "esp32/status")
+    assert window.topics_list.count() == 1
+    assert window.topic_items["esp32/status"].text() == "esp32/status  (2)"
+
+
+def fill_two_topics(window):
+    """Puts one 'a/temp' row and one 'b/hum' row in the table, with their topic lines."""
+    for topic in ["a/temp", "b/hum"]:
+        add_message_row(window.messages_table, "12:00:00", topic, "1")
+        update_topic_count(window, topic)
+
+
+# YOUR TARGET: nothing checked -> every row is visible.
+def test_filter_nothing_checked_shows_all(qt_app):
+    window = build_window()
+    fill_two_topics(window)
+    apply_topic_filter(window)
+    assert not any(window.messages_table.isRowHidden(row) for row in range(2))
+
+
+# YOUR TARGET: checking "a/temp" hides the "b/hum" row (row 0 = newest = b/hum).
+def test_filter_hides_unchecked_topics(qt_app):
+    window = build_window()
+    fill_two_topics(window)
+    window.topic_items["a/temp"].setCheckState(Qt.CheckState.Checked)
+    assert window.messages_table.isRowHidden(0)       # b/hum
+    assert not window.messages_table.isRowHidden(1)   # a/temp

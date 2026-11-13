@@ -1,12 +1,18 @@
 import sys
+
 from datetime import datetime
+
 import paho.mqtt.client as mqtt
-from PySide6.QtCore import QTimer
+
+from PySide6.QtCore import Qt, QTimer
+
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -24,6 +30,50 @@ def add_message_row(table, time_text, topic, payload):
     table.setItem(0, 0, QTableWidgetItem(time_text))
     table.setItem(0, 1, QTableWidgetItem(topic))
     table.setItem(0, 2, QTableWidgetItem(payload))
+
+
+def update_topic_count(window, topic):
+    """Adds 1 to the topic's counter; creates its checkbox line the first time."""
+    window.topic_counts[topic] = window.topic_counts.get(topic, 0) + 1
+    if topic not in window.topic_items:
+        item = QListWidgetItem()
+        # A list line can carry a checkbox: make it checkable, start unchecked
+        item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+        item.setCheckState(Qt.CheckState.Unchecked)
+        window.topics_list.addItem(item)
+        window.topic_items[topic] = item  # remember the line to update its count later
+    window.topic_items[topic].setText(f"{topic}  ({window.topic_counts[topic]})")
+
+
+def apply_topic_filter(window):
+    """Hides table rows whose topic is not checked. Nothing checked = show everything."""
+    checked_topics = []
+    table = window.messages_table
+
+    # Add the checked topics in checked_topics
+    for topic, item in window.topic_items.items():
+        if item.checkState() == Qt.CheckState.Checked:
+            checked_topics.append(topic)
+
+    # If at least one filter is checked, Hide the rows that aren't selected
+    if len(checked_topics) > 0 :
+        for row_number in range (table.rowCount()):
+            topic = table.item(row_number, 1).text()
+            if topic not in checked_topics:
+                table.setRowHidden(row_number, True)
+            else:
+                table.setRowHidden(row_number, False)
+
+    # If no filter is checked show all rows
+    else:
+        for row_number in range (table.rowCount()):
+            table.setRowHidden(row_number, False)
+
+
+    #table = window.messages_table
+    #for row in range (table.rowCount()):
+
+
 
 
 def build_window():
@@ -44,6 +94,12 @@ def build_window():
     window.messages_table.verticalHeader().setVisible(False)  # hide row numbers
     window.messages_table.setColumnWidth(1, 250)
 
+    # Topics panel: one checkable line per topic seen, with its message count
+    window.topics_list = QListWidget()
+    window.topics_list.setFixedWidth(280)
+    window.topic_counts = {}  # topic -> number of messages received
+    window.topic_items = {}   # topic -> its line (QListWidgetItem) in topics_list
+
     # paho callback: runs inside poll_network(), so it can touch the window
     def on_mqtt_connect(client, userdata, flags, reason_code, properties):
         if reason_code.is_failure:  # broker answered "no" (e.g. bad password)
@@ -54,8 +110,11 @@ def build_window():
 
     # paho callback: called on each incoming message, updates the label & add data in a new row
     def on_mqtt_message(client, userdata, message):
-        window.last_message_label.setText(f"Dernier message : {message.topic} {message.payload.decode('utf-8')}")
-        add_message_row(window.messages_table, datetime.now().strftime(format="%H:%M:%S"), message.topic, message.payload.decode('utf-8'))
+        payload = message.payload.decode("utf-8")
+        window.last_message_label.setText(f"Dernier message : {message.topic} {payload}")
+        add_message_row(window.messages_table, datetime.now().strftime(format="%H:%M:%S"), message.topic, payload)
+        update_topic_count(window, message.topic)
+        apply_topic_filter(window)  # the new row may need hiding
     
     
     # Timer: every 50 ms, let paho read the network once (timeout=0 = don't wait).
@@ -95,6 +154,13 @@ def build_window():
     #Pressing enter in the url input also connects
     window.url_input.returnPressed.connect(on_connect_clicked)
 
+    # itemChanged fires when a checkbox is ticked (or a line's text changes): re-filter.
+    # Qt passes the changed item; we don't need it, the filter reads every checkbox.
+    def on_topic_item_changed(item):
+        apply_topic_filter(window)
+
+    window.topics_list.itemChanged.connect(on_topic_item_changed)
+
     # Layouts place widgets: a row (URL + button) above the status line
     top_row = QHBoxLayout()
     top_row.addWidget(window.url_input)
@@ -103,9 +169,12 @@ def build_window():
     page.addLayout(top_row)
     page.addWidget(window.status_label)
     page.addWidget(window.last_message_label)
-    page.addWidget(window.messages_table)
+    middle_row = QHBoxLayout()  # topics on the left, messages on the right
+    middle_row.addWidget(window.topics_list)
+    middle_row.addWidget(window.messages_table)
+    page.addLayout(middle_row)
 
-    window.resize(800, 500)
+    window.resize(1000, 550)
     return window
 
 
