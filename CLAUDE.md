@@ -26,7 +26,8 @@ Bonus s'il reste du temps : pause, vider, recherche, JSON, Historique, Paramètr
 
 ## Où on en est
 - 2026-11-13 : plan validé. Étape 1 finie (3 tests verts, mon `on_message` relu).
-- Prochaine étape : 2, première fenêtre PySide6.
+- 2026-11-13 : étape 2a finie (fenêtre + champ URL + bouton, Entrée connecte aussi, 6 tests verts).
+- Prochaine étape : 2b, le bouton fait la vraie connexion MQTT et affiche « Connecté ».
 
 ## Réglages
 Aucun changement par rapport à `CodeMastery/CLAUDE.md`.
