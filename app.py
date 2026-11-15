@@ -82,6 +82,26 @@ def show_message_detail(window, row):
     window.detail_payload_label.setText(cells_text[2])
     window.detail_size_label.setText(f"Taille : {len(cells_text[2].encode("utf-8"))} octets")
 
+
+def publish_message(window):
+    """Sends the payload to the topic typed in the publish bar."""
+    # Refuse if not connected 
+    if window.client is None :
+        window.publish_result_label.setText("Pas connecté : impossible de publier")
+        return
+    # Refuse if topic is empty
+    elif window.publish_topic_input.text().strip() == "":
+        window.publish_result_label.setText("Topic vide : impossible de publier")
+        return
+
+    # Read the 2 fields and publish
+    topic = window.publish_topic_input.text().strip()
+    payload = window.publish_payload_input.text()
+    window.client.publish(topic, payload)
+    window.publish_result_label.setText(f"Publié sur {topic}")
+
+
+
 def build_window():
     window = QWidget()
     window.setWindowTitle("MQTT Inspector")
@@ -112,6 +132,14 @@ def build_window():
     window.detail_payload_label = QLabel("-")
     window.detail_payload_label.setWordWrap(True)  # long JSON goes to the next line
     window.detail_size_label = QLabel("Taille : -")
+
+    # Publish bar: topic + payload + button, at the bottom like the mockup
+    window.publish_topic_input = QLineEdit()
+    window.publish_topic_input.setPlaceholderText("Topic, ex. home/living/command")  # grey hint, not real text
+    window.publish_payload_input = QLineEdit()
+    window.publish_payload_input.setPlaceholderText('Payload, ex. {"led": "on"}')
+    window.publish_button = QPushButton("Publier")
+    window.publish_result_label = QLabel("")
 
     # paho callback: runs inside poll_network(), so it can touch the window
     def on_mqtt_connect(client, userdata, flags, reason_code, properties):
@@ -184,6 +212,16 @@ def build_window():
 
     window.messages_table.cellClicked.connect(on_cell_clicked)
 
+    # the "Publier" button AND Enter in the payload field both call publish_message
+    def on_publish_clicked():
+        """Intermediate function, calls publish message when publish button is clicked 
+        or return key is pressed in both input fields"""
+        publish_message(window)
+
+    # Publish if button is pressed or return is pressed in both input fields
+    window.publish_button.clicked.connect(on_publish_clicked)
+    window.publish_topic_input.returnPressed.connect(on_publish_clicked)
+    window.publish_payload_input.returnPressed.connect(on_publish_clicked)
 
     # Layouts place widgets: a row (URL + button) above the status line
     top_row = QHBoxLayout()
@@ -205,6 +243,13 @@ def build_window():
     detail_column.addStretch()  # empty space below, so labels stay at the top
     middle_row.addLayout(detail_column)
     page.addLayout(middle_row)
+    publish_row = QHBoxLayout()
+    publish_row.addWidget(QLabel("Publier un message"))
+    publish_row.addWidget(window.publish_topic_input)
+    publish_row.addWidget(window.publish_payload_input)
+    publish_row.addWidget(window.publish_button)
+    publish_row.addWidget(window.publish_result_label)
+    page.addLayout(publish_row)
 
     window.resize(1250, 550)
     return window

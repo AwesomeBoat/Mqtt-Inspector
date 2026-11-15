@@ -185,3 +185,43 @@ def test_click_cell_shows_detail(qt_app):
     add_message_row(window.messages_table, "12:00:05", "new/topic", "2")
     window.messages_table.cellClicked.emit(1, 2)  # same as a real click on row 1, column 2
     assert window.detail_topic_label.text() == "Topic : old/topic"
+
+
+# Checks the publish bar is there, empty, with a "Publier" button.
+def test_window_has_publish_bar(qt_app):
+    window = build_window()
+    assert window.publish_topic_input.text() == ""
+    assert window.publish_payload_input.text() == ""
+    assert window.publish_button.text() == "Publier"
+
+
+# YOUR TARGET: publishing before connecting shows an error instead of crashing.
+def test_publish_without_connection_shows_error(qt_app):
+    window = build_window()
+    window.publish_topic_input.setText("test/step5b")
+    window.publish_button.click()
+    assert window.publish_result_label.text() == "Pas connecté : impossible de publier"
+
+
+# YOUR TARGET: an empty topic is refused (MQTT needs a topic).
+def test_publish_empty_topic_shows_error(qt_app, broker):
+    window = build_window()
+    window.connect_button.click()
+    wait_until(lambda: window.status_label.text().startswith("Connecté"))
+    window.publish_payload_input.returnPressed.emit()  # Enter in the payload field publishes too
+    assert window.publish_result_label.text() == "Topic vide : impossible de publier"
+
+
+# YOUR TARGET: what we publish goes to the broker and comes back in our own table.
+def test_published_message_comes_back(qt_app, broker):
+    window = build_window()
+    window.connect_button.click()
+    wait_until(lambda: window.status_label.text().startswith("Connecté"))
+    wait_until(lambda: False, timeout=0.3)  # give the broker time to register our subscribe
+    window.publish_topic_input.setText("test/step5b")
+    window.publish_payload_input.setText('{"led": "on"}')
+    window.publish_button.click()
+    assert window.publish_result_label.text() == "Publié sur test/step5b"
+    table = window.messages_table
+    assert wait_until(lambda: table.rowCount() > 0 and table.item(0, 1).text() == "test/step5b")
+    assert table.item(0, 2).text() == '{"led": "on"}'
