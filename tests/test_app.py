@@ -4,7 +4,13 @@ import paho.mqtt.client as mqtt
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QTableWidget
 
-from app import add_message_row, apply_topic_filter, build_window, update_topic_count
+from app import (
+    add_message_row,
+    apply_topic_filter,
+    build_window,
+    show_message_detail,
+    update_topic_count,
+)
 from conftest import wait_until
 
 
@@ -152,3 +158,30 @@ def test_filter_hides_unchecked_topics(qt_app):
     window.topic_items["a/temp"].setCheckState(Qt.CheckState.Checked)
     assert window.messages_table.isRowHidden(0)       # b/hum
     assert not window.messages_table.isRowHidden(1)   # a/temp
+
+
+# Checks the detail panel starts empty, before any click.
+def test_detail_panel_starts_empty(qt_app):
+    window = build_window()
+    assert window.detail_topic_label.text() == "Topic : -"
+    assert window.detail_payload_label.text() == "-"
+
+
+# YOUR TARGET: checks the detail shows topic, time, payload and size of the given row.
+def test_show_message_detail_fills_panel(qt_app):
+    window = build_window()
+    add_message_row(window.messages_table, "15:42:31", "home/living/temperature", "22.6")
+    show_message_detail(window, 0)
+    assert window.detail_topic_label.text() == "Topic : home/living/temperature"
+    assert window.detail_time_label.text() == "Reçu à : 15:42:31"
+    assert window.detail_payload_label.text() == "22.6"
+    assert window.detail_size_label.text() == "Taille : 4 octets"
+
+
+# YOUR TARGET: checks that clicking a cell shows that row (row 1 = older message).
+def test_click_cell_shows_detail(qt_app):
+    window = build_window()
+    add_message_row(window.messages_table, "12:00:00", "old/topic", "1")
+    add_message_row(window.messages_table, "12:00:05", "new/topic", "2")
+    window.messages_table.cellClicked.emit(1, 2)  # same as a real click on row 1, column 2
+    assert window.detail_topic_label.text() == "Topic : old/topic"

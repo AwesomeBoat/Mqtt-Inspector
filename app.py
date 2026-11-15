@@ -70,11 +70,17 @@ def apply_topic_filter(window):
             table.setRowHidden(row_number, False)
 
 
-    #table = window.messages_table
-    #for row in range (table.rowCount()):
+def show_message_detail(window, row):
+    """Fills the detail panel with the message of this table row."""
+    #read the 3 cells of `row`, then fill the 4 detail labels
+    table = window.messages_table
+    cells_text = [table.item(row, i).text() for i in range (table.columnCount())]
 
-
-
+    # Replace the labels with Selected row details
+    window.detail_topic_label.setText(f"Topic : {cells_text[1]}")
+    window.detail_time_label.setText(f"Reçu à : {cells_text[0]}")
+    window.detail_payload_label.setText(cells_text[2])
+    window.detail_size_label.setText(f"Taille : {len(cells_text[2].encode("utf-8"))} octets")
 
 def build_window():
     window = QWidget()
@@ -99,6 +105,13 @@ def build_window():
     window.topics_list.setFixedWidth(280)
     window.topic_counts = {}  # topic -> number of messages received
     window.topic_items = {}   # topic -> its line (QListWidgetItem) in topics_list
+
+    # Detail panel: shows the message clicked in the table
+    window.detail_topic_label = QLabel("Topic : -")
+    window.detail_time_label = QLabel("Reçu à : -")
+    window.detail_payload_label = QLabel("-")
+    window.detail_payload_label.setWordWrap(True)  # long JSON goes to the next line
+    window.detail_size_label = QLabel("Taille : -")
 
     # paho callback: runs inside poll_network(), so it can touch the window
     def on_mqtt_connect(client, userdata, flags, reason_code, properties):
@@ -161,6 +174,17 @@ def build_window():
 
     window.topics_list.itemChanged.connect(on_topic_item_changed)
 
+    # When a cell of messages_table is clicked, show that row's detail
+
+    def on_cell_clicked(row, column):
+        """
+        Qt only sends (row, column) with cellClicked, add 'window' and call show_message_detail
+        """
+        show_message_detail(window, row)
+
+    window.messages_table.cellClicked.connect(on_cell_clicked)
+
+
     # Layouts place widgets: a row (URL + button) above the status line
     top_row = QHBoxLayout()
     top_row.addWidget(window.url_input)
@@ -172,9 +196,17 @@ def build_window():
     middle_row = QHBoxLayout()  # topics on the left, messages on the right
     middle_row.addWidget(window.topics_list)
     middle_row.addWidget(window.messages_table)
+    detail_column = QVBoxLayout()  # detail labels stacked, pushed to the top
+    detail_column.addWidget(QLabel("Détail du message"))
+    detail_column.addWidget(window.detail_topic_label)
+    detail_column.addWidget(window.detail_time_label)
+    detail_column.addWidget(window.detail_payload_label)
+    detail_column.addWidget(window.detail_size_label)
+    detail_column.addStretch()  # empty space below, so labels stay at the top
+    middle_row.addLayout(detail_column)
     page.addLayout(middle_row)
 
-    window.resize(1000, 550)
+    window.resize(1250, 550)
     return window
 
 
