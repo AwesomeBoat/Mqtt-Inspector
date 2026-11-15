@@ -30,7 +30,9 @@ Bonus s'il reste du temps : pause, vider, recherche, JSON, Historique, Paramètr
 - 2026-11-13 : étape 2b finie (vraie connexion via QTimer + `client.loop(timeout=0)`, « Dernier message », 12 tests verts).
 - 2026-11-13 : étape 3 finie (tableau Heure/Topic/Message, plus récent en haut, 16 tests verts).
 - 2026-11-14 : étape 4 finie (panneau Topics, compteurs, filtre par cases cochées, 20 tests verts).
-- Prochaine étape : 5, détail du message + barre « Publier ».
+- 2026-11-15 : étape 5a finie (panneau Détail du message au clic sur une ligne, 23 tests verts).
+- 2026-11-15 : étape 5b finie (barre Publier, Entrée publie aussi, le message revient dans le tableau, 27 tests verts). Étape 5 finie.
+- Prochaine étape : 6, style de la maquette (thème sombre, sidebar, icônes).
 
 ## Réglages
 Aucun changement par rapport à `CodeMastery/CLAUDE.md`.
