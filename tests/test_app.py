@@ -245,3 +245,4 @@ def test_stylesheet_styles_topics_list():
     style = load_stylesheet()
     assert "QListWidget {" in style
     assert "QListWidget::item:selected" in style
+

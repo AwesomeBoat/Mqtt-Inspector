@@ -1,61 +1,61 @@
 # MQTT Inspector
 
-## Présentation
+## About the project
 
-MQTT Inspector est une petite application de bureau que j’ai faite en Python. Elle me permet de me connecter à un broker MQTT, de voir les messages qui arrivent et d’en publier.
+MQTT Inspector is a small desktop application I made with Python. It lets me connect to an MQTT broker, view incoming messages, and publish my own messages.
 
-Dans la fenêtre, je peux aussi retrouver les topics reçus avec leur nombre de messages, filtrer l’affichage avec les cases à cocher, et cliquer sur un message pour voir ses détails.
+I can also see the topics that have received messages and their message counts, filter the list with checkboxes, and click a message to see its details.
 
-Voici une capture de l’application :
+Here is a screenshot of the application:
 
-![Capture de MQTT Inspector](design/App_image.png)
+![MQTT Inspector screenshot](design/App_image.png)
 
-## Ce qu’il faut pour le lancer
+## What I need to run it
 
-- Python 3.13 ou plus récent
-- [uv](https://docs.astral.sh/uv/) pour installer les dépendances du projet
-- Un broker MQTT accessible, par exemple Mosquitto sur `localhost:1883`
+- Python 3.13 or newer
+- [uv](https://docs.astral.sh/uv/) to install the project dependencies
+- An MQTT broker I can connect to, for example Mosquitto running on `localhost:1883`
 
-## Installation et lancement
+## Installation and launch
 
-Dans un terminal ouvert dans le dossier du projet, j’installe les dépendances :
+In a terminal opened in the project folder, I install the dependencies:
 
 ```bash
 uv sync
 ```
 
-Je démarre ensuite mon broker MQTT. Puis je lance l’application :
+I start my MQTT broker, then launch the application:
 
 ```bash
 uv run python app.py
 ```
 
-L’adresse `mqtt://localhost:1883` est déjà indiquée dans la fenêtre. Je peux la modifier, puis cliquer sur **Se connecter**. L’application écoute tous les topics du broker.
+The address `mqtt://localhost:1883` is already entered in the window. I can change it and click **Connect**. The application listens to all topics on the broker.
 
-Pour générer des messages de démonstration, je peux ouvrir un deuxième terminal et lancer :
+To generate some example messages, I open a second terminal and run:
 
 ```bash
 uv run python fake_sensors.py
 ```
 
-Ce petit programme envoie régulièrement des valeurs de température, d’humidité, de puissance et un état de connexion.
+This small program regularly sends example temperature, humidity, power, and connection status messages.
 
-## Comment j’ai réalisé le projet
+## How I made this project
 
-J’ai avancé petit à petit. J’ai d’abord essayé de recevoir des messages MQTT dans le terminal. Ensuite, j’ai créé la fenêtre avec PySide6 et ajouté la connexion au broker. J’ai utilisé un timer Qt pour vérifier régulièrement les messages reçus, sans bloquer la fenêtre.
+I built the project one step at a time. First, I tried receiving MQTT messages in the terminal. Then I created the window with PySide6 and added the broker connection. I used a Qt timer to check for incoming messages regularly without freezing the window.
 
-Après ça, j’ai ajouté le tableau des messages, la liste des topics avec leurs compteurs et leurs filtres, le panneau de détails, puis la possibilité de publier un message. J’ai aussi séparé le style dans `style.qss` pour donner à l’application son thème sombre. Enfin, j’ai écrit des tests avec `pytest` pour vérifier les principales fonctions.
+After that, I added the message table, the topic list with counters and filters, the message details panel, and the option to publish a message. I put the window styling in `style.qss` to give it a dark theme. Finally, I wrote tests with `pytest` to check the main features.
 
-## Organisation des fichiers
+## Project files
 
-- `app.py` : la fenêtre et les fonctions principales de l’application.
-- `mqtt_client.py` : des fonctions de base pour le client MQTT et la lecture de l’adresse du broker.
-- `fake_sensors.py` : un petit générateur de messages pour faire des essais.
-- `style.qss` : les couleurs et le style de la fenêtre.
-- `tests/` : les tests du projet.
-- `design/mockup.png` : la maquette qui m’a servi de référence.
+- `app.py`: the application window and its main features.
+- `mqtt_client.py`: basic MQTT client functions and broker address parsing.
+- `fake_sensors.py`: a small message generator for testing the application.
+- `style.qss`: the window colors and styling.
+- `tests/`: the project tests.
+- `design/mockup.png`: the mockup I used as a reference.
 
-## Lancer les tests
+## Run the tests
 
 ```bash
 uv run pytest
