@@ -8,6 +8,7 @@ from app import (
     add_message_row,
     apply_topic_filter,
     build_window,
+    load_stylesheet,
     show_message_detail,
     update_topic_count,
 )
@@ -225,3 +226,22 @@ def test_published_message_comes_back(qt_app, broker):
     table = window.messages_table
     assert wait_until(lambda: table.rowCount() > 0 and table.item(0, 1).text() == "test/step5b")
     assert table.item(0, 2).text() == '{"led": "on"}'
+
+
+# Checks style.qss is found and read (it sits next to app.py).
+def test_stylesheet_loads():
+    assert "QPushButton#primary" in load_stylesheet()
+
+
+# Checks both purple buttons carry the "primary" name used by the stylesheet.
+def test_purple_buttons_are_primary(qt_app):
+    window = build_window()
+    assert window.connect_button.objectName() == "primary"
+    assert window.publish_button.objectName() == "primary"
+
+
+# the topics list has its own style, with a purple selected line.
+def test_stylesheet_styles_topics_list():
+    style = load_stylesheet()
+    assert "QListWidget {" in style
+    assert "QListWidget::item:selected" in style

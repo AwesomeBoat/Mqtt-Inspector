@@ -1,6 +1,7 @@
 import sys
 
 from datetime import datetime
+from pathlib import Path
 
 import paho.mqtt.client as mqtt
 
@@ -21,6 +22,11 @@ from PySide6.QtWidgets import (
 )
 
 from mqtt_client import parse_broker_url
+
+
+def load_stylesheet():
+    """Reads style.qss from this file's folder, so it works whatever folder we launch from."""
+    return (Path(__file__).parent / "style.qss").read_text(encoding="utf-8")
 
 
 def add_message_row(table, time_text, topic, payload):
@@ -69,6 +75,18 @@ def apply_topic_filter(window):
         for row_number in range (table.rowCount()):
             table.setRowHidden(row_number, False)
 
+def filter_topic_searchbar(window):
+    "Search and filter the topics with the input text"
+    list = window.topics_list
+    input_research_text  = window.research_topic.text()
+    for i in range (list.count()):
+        item = list.item(i)
+        if input_research_text in item.text():
+            item.setHidden(False)
+        else:
+            item.setHidden(True)
+                
+
 
 def show_message_detail(window, row):
     """Fills the detail panel with the message of this table row."""
@@ -110,6 +128,7 @@ def build_window():
     # Widgets = the building blocks you see on screen
     window.url_input = QLineEdit("mqtt://localhost:1883")
     window.connect_button = QPushButton("Se connecter")
+    window.connect_button.setObjectName("primary")  # name used by QPushButton#primary in style.qss
     window.status_label = QLabel("Déconnecté")
     window.last_message_label = QLabel("Dernier message : -")
 
@@ -125,6 +144,8 @@ def build_window():
     window.topics_list.setFixedWidth(280)
     window.topic_counts = {}  # topic -> number of messages received
     window.topic_items = {}   # topic -> its line (QListWidgetItem) in topics_list
+    window.research_topic = QLineEdit() # research bar
+    window.research_topic.setPlaceholderText("Search a topic...")
 
     # Detail panel: shows the message clicked in the table
     window.detail_topic_label = QLabel("Topic : -")
@@ -139,6 +160,7 @@ def build_window():
     window.publish_payload_input = QLineEdit()
     window.publish_payload_input.setPlaceholderText('Payload, ex. {"led": "on"}')
     window.publish_button = QPushButton("Publier")
+    window.publish_button.setObjectName("primary")
     window.publish_result_label = QLabel("")
 
     # paho callback: runs inside poll_network(), so it can touch the window
@@ -202,6 +224,12 @@ def build_window():
 
     window.topics_list.itemChanged.connect(on_topic_item_changed)
 
+    def on_research_topic_modification():
+        """Intermediate function to send the window in filter_topic_searchbar"""
+        filter_topic_searchbar(window)
+
+    window.research_topic.textChanged.connect(on_research_topic_modification) # Filter the topic selector when input changes
+
     # When a cell of messages_table is clicked, show that row's detail
 
     def on_cell_clicked(row, column):
@@ -231,8 +259,14 @@ def build_window():
     page.addLayout(top_row)
     page.addWidget(window.status_label)
     page.addWidget(window.last_message_label)
+
     middle_row = QHBoxLayout()  # topics on the left, messages on the right
-    middle_row.addWidget(window.topics_list)
+    topics_column = QVBoxLayout()
+    topics_column.addWidget(window.research_topic)
+    topics_column.addWidget(window.topics_list)
+    window.research_topic.setMaximumWidth(400)
+    window.topics_list.setMaximumWidth(400)
+    middle_row.addLayout(topics_column)
     middle_row.addWidget(window.messages_table)
     detail_column = QVBoxLayout()  # detail labels stacked, pushed to the top
     detail_column.addWidget(QLabel("Détail du message"))
@@ -258,6 +292,7 @@ def build_window():
 def main():
     # One QApplication per program: it runs the Qt event loop
     app = QApplication(sys.argv)
+    app.setStyleSheet(load_stylesheet())  # one stylesheet paints every widget of the app
     window = build_window()
     window.show()
     # exec() blocks and waits for events (clicks, keys...) until the window closes

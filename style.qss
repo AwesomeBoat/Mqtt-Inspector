@@ -1,0 +1,93 @@
+/* Dark theme, colors picked from design/mockup.png.
+   QSS = CSS for Qt widgets: selector { property: value; } */
+
+/* Every widget: dark background, light text */
+QWidget {
+    background-color: #12111f;
+    color: #e8e8f0;
+    font-size: 14px;
+}
+
+/* Text fields: darker box, rounded, purple border when typing */
+QLineEdit {
+    background-color: #1d1b30;
+    border: 1px solid #2e2b4a;
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+QLineEdit:focus {
+    border: 1px solid #7b61ff;
+}
+
+/* Normal buttons */
+QPushButton {
+    background-color: #1d1b30;
+    border: 1px solid #2e2b4a;
+    border-radius: 8px;
+    padding: 8px 16px;
+}
+QPushButton:hover {
+    border: 1px solid #7b61ff;
+}
+
+/* #primary = only buttons with setObjectName("primary"): the purple ones */
+QPushButton#primary {
+    background-color: #7b61ff;
+    border: none;
+    font-weight: bold;
+}
+QPushButton#primary:hover {
+    background-color: #8f7aff;
+}
+
+/* Messages table: card color, no grid lines, purple selected row */
+QTableWidget {
+    background-color: #17162a;
+    border: 1px solid #2e2b4a;
+    border-radius: 10px;
+    gridline-color: transparent;
+}
+QTableWidget::item {
+    padding: 6px;
+}
+QTableWidget::item:selected {
+    background-color: #4b3fb0;
+}
+/* The column titles (Heure / Topic / Message) */
+QHeaderView::section {
+    background-color: #17162a;
+    color: #9a98b0;
+    border: none;
+    padding: 8px;
+}
+
+/* YOUR TURN: topics list, same card look as the table (3 rules: the list, its lines, the selected line) */
+QListWidget {
+    background-color: #17162a;
+    border: 1px solid #2e2b4a;
+    border-radius: 10px;
+    gridline-color: transparent;
+}
+
+QListWidget::item {
+    padding: 6px;
+    border: rounded;
+}
+
+QListWidget::item:selected {
+    background-color: #4b3fb0;
+}
+/* The column titles (Heure / Topic / Message) */
+
+
+/* Checkboxes of the topics list: outlined square, filled purple when checked */
+QListWidget::indicator {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #5a5778;
+    border-radius: 4px;
+}
+QListWidget::indicator:checked {
+    background-color: #7b61ff;
+    border: 2px solid #7b61ff;
+}
